@@ -22,7 +22,7 @@ VersionInfo *VersionInfo::GetVersionForTransaction(Transaction &transaction, Ver
 	} else {
 		// follow the version pointers
 		while (true) {
-			auto next = version->next;
+			auto next = version->next.load();
 			if (!next) {
 				// use this version: no predecessor
 				break;

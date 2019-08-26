@@ -9,6 +9,7 @@
 #pragma once
 
 #include "common/constants.hpp"
+#include <atomic>
 
 namespace duckdb {
 
@@ -19,8 +20,8 @@ class VersionChunkInfo;
 struct VersionInfo {
 	VersionChunkInfo *vinfo;
 	index_t entry;
-	VersionInfo *prev = nullptr;
-	VersionInfo *next = nullptr;
+	std::atomic<VersionInfo *> prev;
+	std::atomic<VersionInfo *> next;
 	transaction_t version_number;
 	data_ptr_t tuple_data;
 

@@ -91,13 +91,15 @@ void VersionChunk::PushTuple(Transaction &transaction, UndoFlags flag, index_t o
 	meta->entry = offset_in_version;
 	meta->vinfo = version;
 
-	meta->prev = nullptr;
-	meta->next = version->version_pointers[offset_in_version];
-	version->version_pointers[offset_in_version] = meta;
-
-	if (meta->next) {
-		meta->next->prev = meta;
+	// get the previous top-level entry and replace it with the newly pushed tuple
+	auto prev_entry = version->version_pointers[offset_in_version];
+	if (prev_entry) {
+		prev_entry->prev = meta;
 	}
+
+	meta->prev = nullptr;
+	meta->next = prev_entry;
+	version->version_pointers[offset_in_version] = meta;
 
 	DataChunk chunk;
 	chunk.Initialize(table.types);
@@ -139,8 +141,9 @@ void VersionChunk::AppendToChunk(DataChunk &chunk, VersionInfo *info) {
 		}
 	} else {
 		// fetch from tuple data
-		assert(info->prev->tuple_data);
-		auto tuple_data = info->prev->tuple_data;
+		auto prev = info->prev.load();
+		assert(prev->tuple_data);
+		auto tuple_data = prev->tuple_data;
 		index_t current_offset = chunk.size();
 		for (index_t i = 0; i < table.types.size(); i++) {
 			auto type = chunk.data[i].type;

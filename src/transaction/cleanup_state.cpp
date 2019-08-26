@@ -33,16 +33,17 @@ void CleanupState::CleanupEntry(UndoFlags type, data_ptr_t data) {
 		if (type == UndoFlags::DELETE_TUPLE || type == UndoFlags::UPDATE_TUPLE) {
 			CleanupIndexInsert(info);
 		}
-		if (!info->prev) {
+		auto parent = info->prev.load();
+		if (!parent) {
 			// parent refers to a storage chunk
 			info->vinfo->Cleanup(info);
 		} else {
 			// parent refers to another entry in UndoBuffer
 			// simply remove this entry from the list
-			auto parent = info->prev;
-			parent->next = info->next;
-			if (parent->next) {
-				parent->next->prev = parent;
+			auto next = info->next.load();
+			parent->next = next;
+			if (next) {
+				next->prev = parent;
 			}
 		}
 		break;

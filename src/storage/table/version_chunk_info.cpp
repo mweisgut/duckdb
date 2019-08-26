@@ -8,9 +8,10 @@ VersionChunkInfo::VersionChunkInfo(VersionChunk &chunk, index_t start) : chunk(c
 
 void VersionChunkInfo::Cleanup(VersionInfo *info) {
 	index_t entry = info->entry;
-	version_pointers[entry] = info->next;
-	if (info->next) {
-		info->next->prev = nullptr;
+	auto next = info->next.load();
+	version_pointers[entry] = next;
+	if (next) {
+		next->prev = nullptr;
 	}
 }
 
@@ -31,8 +32,9 @@ void VersionChunkInfo::Undo(VersionInfo *info) {
 			tuple_data += transient.type_size;
 		}
 	}
-	version_pointers[entry] = info->next;
-	if (info->next) {
-		info->next->prev = nullptr;
+	auto next = info->next.load();
+	version_pointers[entry] = next;
+	if (next) {
+		next->prev = nullptr;
 	}
 }
